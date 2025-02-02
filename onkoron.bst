@@ -17,8 +17,7 @@ ENTRY
   {}
   { label }
 
-INTEGERS { output.state before.all mid.sentence after.sentence 
-          nameptr namesleft numnames is_roman_name }
+INTEGERS { output.state before.all mid.sentence after.sentence nameptr namesleft numnames }
 
 STRINGS { s t }
 
@@ -31,9 +30,21 @@ FUNCTION {init.state.consts}
 
 FUNCTION {output.nonnull}
 { 's :=
-  s #1 #5 substring$ "\\url{" =
-    { s write$ }
-    { s }
+  s write$
+}
+
+FUNCTION {output}
+{ duplicate$ empty$
+    'pop$
+    'output.nonnull
+  if$
+}
+
+FUNCTION {output.check}
+{ 't :=
+  duplicate$ empty$
+    { pop$ "empty " t * " in " * cite$ * warning$ }
+    'output.nonnull
   if$
 }
 
@@ -52,48 +63,53 @@ FUNCTION {fin.entry}
   newline$
 }
 
-FUNCTION {print.bibliography.start}
-{ "\begin{thebibliography}{99}" write$
-  newline$
-  "\itemsep -0.5em" write$
-  newline$
+FUNCTION {is.kanji.str}
+{ duplicate$ #1 #2 substring$ 
+  duplicate$ chr.to.int$ #128 >
+  swap$ pop$
 }
 
-FUNCTION {print.bibliography.end}
-{ newline$
-  "\end{thebibliography}" write$
-  newline$
-}
-
-FUNCTION {check.first.char}
-{ 
-  #1 #1 substring$
-  duplicate$ "A" >= swap$ "z" <= and
+FUNCTION {format.name}
+{ 's :=
+  s #1 "{ll}" format.name$
 }
 
 FUNCTION {format.names}
 { 's :=
-  s #1 "{ff }{ll}" format.name$ check.first.char
-  'is_roman_name :=
-  
+  #1 'nameptr :=
   s num.names$ 'numnames :=
-  numnames #3 <
-    { s #1 "{ll}" format.name$ write$
-      numnames #2 =
-        { is_roman_name
-            { ", " }
-            { "，" }
-          if$ write$
-          s #2 "{ll}" format.name$ write$
+  numnames 'namesleft :=
+  
+  s #1 "{ll}" format.name$ is.kanji.str$
+    { % 日本語の著者の処理
+      numnames #3 <
+        { s #1 "{ll}" format.name$ write$
+          numnames #2 =
+            { "，" write$
+              s #2 "{ll}" format.name$ write$
+            }
+            'skip$
+          if$
         }
-        'skip$
+        { s #1 "{ll}" format.name$ write$
+          "~他" write$
+        }
       if$
     }
-    { s #1 "{ll}" format.name$ write$
-      is_roman_name
-        { " et al." }
-        { " 他" }
-      if$ write$
+    { % 欧文著者の処理
+      numnames #3 <
+        { s #1 "{ll}" format.name$ write$
+          numnames #2 =
+            { " and " write$
+              s #2 "{ll}" format.name$ write$
+            }
+            'skip$
+          if$
+        }
+        { s #1 "{ll}" format.name$ write$
+          " \textit{et al.}" write$
+        }
+      if$
     }
   if$
 }
@@ -110,124 +126,96 @@ FUNCTION {format.editors}
     { "" }
     { editor format.names
       editor num.names$ #1 >
-        { "，編" * }
-        { "，編" * }
+        { ", eds." * }
+        { ", ed." * }
       if$
     }
   if$
 }
 
-FUNCTION {format.title}
-{ title empty$
-    { "" }
-    { is_roman_name
-        { """" title * """" * }
-        { """" title * """" * }
-      if$
-    }
-}
-
-FUNCTION {format.journal}
-{ journal empty$
-    { "" }
-    { journal }
+FUNCTION {begin.bib}
+{ preamble$ empty$
+    'skip$
+    { preamble$ write$ newline$ }
   if$
-}
-
-FUNCTION {format.pages}
-{ pages empty$
-    { "" }
-    { pages }
-  if$
+  "\begin{thebibliography}{99}" write$ newline$
+  "\setlength{\itemsep}{-1pt}" write$ newline$
+  "\setlength{\parsep}{-2pt}" write$ newline$
+  "\setlength{\baselineskip}{10pt}" write$ newline$
 }
 
 FUNCTION {article}
 { output.bibitem
-  format.authors
-  is_roman_name
-    { ", " }
-    { "，" }
-  if$ write$
-  journal empty$
+  author empty$
     'skip$
-    { format.journal write$ }
+    { format.authors "，" write$ }
   if$
+  journal write$
   volume empty$
     'skip$
-    { is_roman_name
-        { ", " }
-        { "，" }
-      if$ write$
-      volume write$
-    }
+    { "，" write$
+      volume write$ }
   if$
   number empty$
     'skip$
-    { "(" write$
+    { " (" write$
       number write$
-      ")" write$
-    }
+      ")" write$ }
   if$
   pages empty$
     'skip$
-    { is_roman_name
-        { ", " }
-        { "，" }
-      if$ write$
-      format.pages write$
-    }
+    { "，" write$
+      pages write$ }
   if$
   year empty$
     'skip$
-    { is_roman_name
-        { ", " }
-        { "，" }
-      if$ write$
-      year write$
-    }
+    { "，" write$
+      year write$ }
   if$
-  is_roman_name
-    { "." }
-    { "．" }
-  if$ write$
+  "．" write$
   newline$
 }
-
-FUNCTION {inproceedings}
-{ article }
 
 FUNCTION {book}
 { output.bibitem
   author empty$
-    { format.editors }
-    { format.authors }
+    { editor empty$
+        'skip$
+        { format.editors "，" write$ }
+      if$
+    }
+    { format.authors "，" write$ }
   if$
-  is_roman_name
-    { ", " }
-    { "，" }
-  if$ write$
-  title empty$
-    'skip$
-    { format.title write$ }
-  if$
+  title write$
   "，" write$
-  publisher empty$
+  publisher write$
+  year empty$
     'skip$
-    { publisher write$ }
+    { "，" write$
+      year write$ }
+  if$
+  "．" write$
+  newline$
+}
+
+FUNCTION {inproceedings}
+{ output.bibitem
+  author empty$
+    'skip$
+    { format.authors "，" write$ }
+  if$
+  booktitle write$
+  pages empty$
+    'skip$
+    { "，" write$
+      pages write$ }
   if$
   year empty$
     'skip$
-    { is_roman_name
-        { ", " }
-        { "，" }
-      if$ write$
-      year write$
-    }
+    { "，" write$
+      year write$ }
   if$
-  is_roman_name
-    { "." }
-    { "．" }
-  if$ write$
+  "．" write$
   newline$
 }
 
@@ -244,14 +232,16 @@ FUNCTION {misc}
   newline$
 }
 
+FUNCTION {conference} { inproceedings }
 FUNCTION {default.type} { misc }
 
 READ
 
-FUNCTION {set.entry.count}
-{ #0 'entry.count := }
+FUNCTION {end.bib}
+{ newline$
+  "\end{thebibliography}" write$ newline$
+}
 
-EXECUTE {print.bibliography.start}
-EXECUTE {set.entry.count}
+EXECUTE {begin.bib}
 ITERATE {call.type$}
-EXECUTE {print.bibliography.end}
+EXECUTE {end.bib}
