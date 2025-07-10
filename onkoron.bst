@@ -81,7 +81,7 @@ FUNCTION {format.names}
     }
     { % 欧文著者の処理
       numnames #2 >
-        { s #1 "{ll}" format.name$ " et al." * 't := }
+        { s #1 "{ll}" format.name$ " \textit{et al.}" * 't := }
         { s #1 "{ll}" format.name$ 't :=
           numnames #2 =
             { t " and " * s #2 "{ll}" format.name$ * 't := }
