@@ -70,10 +70,10 @@ FUNCTION {format.names}
   s #1 "{ll}" format.name$ is.kanji.str$
     { % 日本語の著者の処理
       numnames #2 >
-        { s #1 "{ff}{ll}" format.name$ "~他" * 't := }
-        { s #1 "{ff}{ll}" format.name$ 't :=
+        { s #1 "{ll}" format.name$ "~他" * 't := }
+        { s #1 "{ll}" format.name$ 't :=
           numnames #2 =
-            { t "，" * s #2 "{ff}{ll}" format.name$ * 't := }
+            { t "，" * s #2 "{ll}" format.name$ * 't := }
             'skip$
           if$
         }
