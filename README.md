@@ -1,5 +1,12 @@
 # 学会原稿テンプレート with カスタムBibTeXスタイル
 
+## Overleafでの利用
+
+このテンプレートは以下のOverleafプロジェクトで確認できます（読み込み専用）：
+https://www.overleaf.com/read/wdbmkdfkbkcr#4cb666
+
+## 概要
+
 このリポジトリは，日本音響学会の研究発表会用の学会原稿LaTeXテンプレートファイル群です．  
 特筆すべき点として，学会の参考文献形式に準拠したBibTeXスタイルファイル（`onkoron.bst`）を独自に実装・同梱しています．  
 
